@@ -1,0 +1,87 @@
+# Manual signed Android App Bundle for Play internal testing.
+# The Play app does not exist yet, so this workflow is manual only.
+# Do not run it until the Play Console steps in store-assets/PLAY_STORE.md are done.
+name: Android internal testing
+
+on:
+  workflow_dispatch:
+
+jobs:
+  internal:
+    runs-on: ubuntu-latest
+    timeout-minutes: 45
+    env:
+      ANDROID_KEYSTORE_BASE64: ${{ secrets.ANDROID_KEYSTORE_BASE64 }}
+      ANDROID_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_KEYSTORE_PASSWORD }}
+      ANDROID_KEY_ALIAS: ${{ secrets.ANDROID_KEY_ALIAS }}
+      ANDROID_KEY_PASSWORD: ${{ secrets.ANDROID_KEY_PASSWORD }}
+      GOOGLE_PLAY_SERVICE_ACCOUNT_JSON: ${{ secrets.GOOGLE_PLAY_SERVICE_ACCOUNT_JSON }}
+      CAPACITOR_SERVER_URL: ${{ secrets.CAPACITOR_SERVER_URL }}
+      ANDROID_VERSION_CODE: ${{ github.run_number }}
+      ANDROID_VERSION_NAME: "1.0.0"
+    steps:
+      - name: Check out
+        uses: actions/checkout@v4
+
+      - name: Set up Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Decode the upload keystore
+        run: |
+          python3 - << 'PY'
+          import base64, os, pathlib
+          raw = os.environ["ANDROID_KEYSTORE_BASE64"].strip()
+          password = os.environ["ANDROID_KEYSTORE_PASSWORD"].strip()
+          alias = os.environ["ANDROID_KEY_ALIAS"].strip()
+          key_password = os.environ["ANDROID_KEY_PASSWORD"].strip()
+          account = os.environ["GOOGLE_PLAY_SERVICE_ACCOUNT_JSON"].strip()
+          if not raw or not password or not alias or not key_password or not account:
+              raise SystemExit(
+                  "ANDROID_KEYSTORE_BASE64, ANDROID_KEYSTORE_PASSWORD, ANDROID_KEY_ALIAS, "
+                  "ANDROID_KEY_PASSWORD, and GOOGLE_PLAY_SERVICE_ACCOUNT_JSON are required."
+              )
+          path = pathlib.Path("android/upload-keystore.jks")
+          path.write_bytes(base64.b64decode(raw))
+          path.chmod(0o600)
+          account_path = pathlib.Path("android/play-service-account.json")
+          account_path.write_text(account if account.startswith("{") else base64.b64decode(account).decode())
+          account_path.chmod(0o600)
+          with pathlib.Path(os.environ["GITHUB_ENV"]).open("a", encoding="utf8") as handle:
+              handle.write(f"ANDROID_KEYSTORE_PATH={path.resolve()}\n")
+          print(f"Keystore written ({path.stat().st_size} bytes)")
+          PY
+
+      - name: Sync the Android shell
+        run: npx cap sync android
+
+      - name: Build the signed app bundle
+        working-directory: android
+        run: chmod +x ./gradlew && ./gradlew bundleRelease
+
+      - name: Upload the app bundle artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: ask-buddha-internal-aab
+          path: android/app/build/outputs/bundle/release/app-release.aab
+          if-no-files-found: error
+
+      - name: Upload to Play internal testing
+        uses: r0adkll/upload-google-play@v1.1.3
+        with:
+          serviceAccountJson: android/play-service-account.json
+          packageName: com.starseedsquad.askbuddha
+          releaseFiles: android/app/build/outputs/bundle/release/app-release.aab
+          track: internal
+          status: completed
