@@ -1,0 +1,4 @@
+/* Loaded after globals.css so a stale CSS build cache cannot keep the old title size. */
+:root {
+  --title-size: clamp(1.15rem, 9.4vw, 3.45rem);
+}

@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import { NativeLinkBridge } from "@/components/native-link-bridge";
 import { SHARE_IMAGE_PATH, siteUrl } from "@/lib/site";
 import "./globals.css";
+import "./title-size.css";
 
 const outfit = localFont({
   src: "../fonts/outfit.woff2",
