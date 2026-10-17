@@ -71,7 +71,7 @@ jobs:
                   handle.write(f"ASC_KEY_ID={key_id}\nASC_ISSUER_ID={issuer}\nAPPLE_TEAM_ID={team}\n")
           written = None
           for folder in (pathlib.Path.home() / "private_keys", pathlib.Path("private_keys"), pathlib.Path.home() / ".private_keys", pathlib.Path.home() / ".appstoreconnect" / "private_keys"):
-              folder.mkdir(mode=0o700, exist_ok=True)
+              folder.mkdir(mode=0o700, parents=True, exist_ok=True)
               path = folder / f"AuthKey_{key_id}.p8"
               path.write_text(raw)
               path.chmod(0o600)
