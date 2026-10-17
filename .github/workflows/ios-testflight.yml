@@ -42,24 +42,44 @@ jobs:
       - name: Write the App Store Connect API key
         run: |
           python3 - << 'PY'
-          import base64, os, pathlib
-          key_id = os.environ["ASC_KEY_ID"].strip()
-          issuer = os.environ["ASC_ISSUER_ID"].strip()
-          team = os.environ["APPLE_TEAM_ID"].strip()
-          raw = os.environ["ASC_PRIVATE_KEY"].strip()
+          import base64, os, pathlib, re, subprocess
+          key_id = re.sub(r"\s+", "", os.environ["ASC_KEY_ID"])
+          issuer = re.sub(r"\s+", "", os.environ["ASC_ISSUER_ID"])
+          team = re.sub(r"\s+", "", os.environ["APPLE_TEAM_ID"])
+          raw = os.environ["ASC_PRIVATE_KEY"].strip().strip('"').strip("'").lstrip("\ufeff")
           if not key_id or not issuer or not team or not raw:
               raise SystemExit("ASC_KEY_ID, ASC_ISSUER_ID, ASC_PRIVATE_KEY, and APPLE_TEAM_ID are required.")
+          if not re.fullmatch(r"[A-Za-z0-9]{10}", key_id):
+              raise SystemExit(f"ASC_KEY_ID should be 10 letters or digits, got length {len(key_id)}.")
+          if not re.fullmatch(r"[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}", issuer):
+              raise SystemExit(f"ASC_ISSUER_ID should be a UUID, got length {len(issuer)}.")
+          if not re.fullmatch(r"[A-Z0-9]{10}", team):
+              raise SystemExit(f"APPLE_TEAM_ID should be 10 letters or digits, got length {len(team)}.")
           if "BEGIN" not in raw:
-              raw = base64.b64decode(raw).decode()
-          raw = raw.replace("\\n", "\n")
+              try:
+                  raw = base64.b64decode(re.sub(r"\s+", "", raw), validate=True).decode()
+              except Exception as error:
+                  raise SystemExit(f"ASC_PRIVATE_KEY is neither a PEM nor base64 PEM ({error}).")
+          raw = raw.replace("\\r\\n", "\n").replace("\\n", "\n").replace("\r\n", "\n").replace("\r", "\n")
           if not raw.endswith("\n"):
               raw += "\n"
-          for folder in (pathlib.Path.home() / "private_keys", pathlib.Path("private_keys")):
+          if "BEGIN PRIVATE KEY" not in raw and "BEGIN EC PRIVATE KEY" not in raw:
+              raise SystemExit("ASC_PRIVATE_KEY PEM header is missing. Expected BEGIN PRIVATE KEY.")
+          env_path = os.environ.get("GITHUB_ENV")
+          if env_path:
+              with open(env_path, "a", encoding="utf-8") as handle:
+                  handle.write(f"ASC_KEY_ID={key_id}\nASC_ISSUER_ID={issuer}\nAPPLE_TEAM_ID={team}\n")
+          written = None
+          for folder in (pathlib.Path.home() / "private_keys", pathlib.Path("private_keys"), pathlib.Path.home() / ".private_keys", pathlib.Path.home() / ".appstoreconnect" / "private_keys"):
               folder.mkdir(mode=0o700, exist_ok=True)
               path = folder / f"AuthKey_{key_id}.p8"
               path.write_text(raw)
               path.chmod(0o600)
-          print(f"API key written for {key_id}")
+              written = path
+          check = subprocess.run(["openssl", "pkey", "-in", str(written), "-noout"], capture_output=True, text=True)
+          if check.returncode != 0:
+              raise SystemExit("ASC_PRIVATE_KEY is not a readable private key. Check that the .p8 contents were pasted unchanged.")
+          print(f"API key written, id length {len(key_id)}, team length {len(team)}, {raw.count(chr(10))} lines")
           PY
 
       - name: Sync the iOS shell
@@ -115,6 +135,13 @@ jobs:
         run: |
           set -euo pipefail
           KEY_PATH="$HOME/private_keys/AuthKey_${ASC_KEY_ID}.p8"
+          if [ ! -f "$KEY_PATH" ]; then
+            echo "App Store Connect key file is missing at the expected AuthKey path"
+            exit 1
+          fi
+          echo "Checking the App Store Connect API key with altool"
+          DEVELOPER_DIR=/Applications/Xcode_16.4.app/Contents/Developer \
+            xcrun altool --list-providers --apiKey "$ASC_KEY_ID" --apiIssuer "$ASC_ISSUER_ID"
           mkdir -p "$RUNNER_TEMP/ios-export"
           cat > "$RUNNER_TEMP/ExportOptions.plist" << EOF
           <?xml version="1.0" encoding="UTF-8"?>
