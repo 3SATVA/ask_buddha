@@ -1,6 +1,6 @@
 # Ask AI Buddha — Google Play
 
-The Android app is a Capacitor shell with the package name `com.starseedsquad.askbuddha`, the same id as the iOS bundle. It loads the live site (by default `https://ask-buddha.vercel.app`, or `CAPACITOR_SERVER_URL` / `NEXT_PUBLIC_SITE_URL` when set) and sells messages only through Google Play Billing. The website keeps the free daily limit. It has no checkout and does not use Stripe. The optional `NEXT_PUBLIC_SUPPORT_URL` link is shown on the website only, never inside the app.
+The Android app is a Capacitor shell with the package name `com.starseedsquad.askbuddha`, the same id as the iOS bundle. It loads the live site (by default `https://ask-buddha-wine.vercel.app`, or `CAPACITOR_SERVER_URL` / `NEXT_PUBLIC_SITE_URL` when set) and sells messages only through Google Play Billing. The website keeps the free daily limit. It has no checkout and does not use Stripe. The optional `NEXT_PUBLIC_SUPPORT_URL` link is shown on the website only, never inside the app.
 
 The Play Console app does not exist yet. The workflow `.github/workflows/android-internal.yml` is manual only (`workflow_dispatch`). Do not run it until the steps at the bottom are done.
 
@@ -14,8 +14,8 @@ The Play Console app does not exist yet. The workflow `.github/workflows/android
 | App category | Lifestyle |
 | Tags | Books & reference, if the console offers a secondary tag |
 | Short description | A quiet talk with the Dhamma. Ten free messages a day. |
-| Privacy policy URL | `https://ask-buddha.vercel.app/privacy` |
-| Website | `https://ask-buddha.vercel.app` |
+| Privacy policy URL | `https://ask-buddha-wine.vercel.app/privacy` |
+| Website | `https://ask-buddha-wine.vercel.app` |
 | Email | The contact on the developer account |
 | Price | Free, with in-app products |
 | Ads | No |
@@ -24,7 +24,7 @@ The Play Console app does not exist yet. The workflow `.github/workflows/android
 
 The short description is 56 characters. Play allows 80.
 
-Replace `https://ask-buddha.vercel.app` with the real production URL if Vercel assigns a different host.
+Production is `https://ask-buddha-wine.vercel.app`. Set `NEXT_PUBLIC_SITE_URL` if a custom domain replaces that host.
 
 ### Full description
 
@@ -34,8 +34,8 @@ Ten messages a day are free. On this Android app, Unlimited today opens the rest
 
 This is not the Buddha, and it is not scripture. It is not a teacher in your community, a doctor, or a counselor. If you may be in danger, the app points you to real help, including 988 in the United States.
 
-Privacy policy: https://ask-buddha.vercel.app/privacy
-Terms of use: https://ask-buddha.vercel.app/terms
+Privacy policy: https://ask-buddha-wine.vercel.app/privacy
+Terms of use: https://ask-buddha-wine.vercel.app/terms
 
 ## Products
 
@@ -96,7 +96,7 @@ The workflow `.github/workflows/android-internal.yml` is manual (`workflow_dispa
 | `ANDROID_KEY_ALIAS` | Yes | The key alias inside that keystore. |
 | `ANDROID_KEY_PASSWORD` | Yes | The key password. It is often the same as the keystore password. |
 | `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | Yes | The service account JSON used to upload the bundle. Raw JSON, or the same JSON encoded as base64. This can be the same account the server uses to verify purchases, if that account also has permission to release to testing tracks. |
-| `CAPACITOR_SERVER_URL` | No | Site the shell should load. When empty, the app loads `https://ask-buddha.vercel.app`. |
+| `CAPACITOR_SERVER_URL` | No | Site the shell should load. When empty, the app loads `https://ask-buddha-wine.vercel.app`. |
 
 Create the keystore once and keep the file. Losing it means you cannot ship updates with the same upload key.
 

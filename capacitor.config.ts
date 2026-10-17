@@ -7,7 +7,7 @@ function hostOf(url: string) {
   try {
     return new URL(url).host;
   } catch {
-    return "ask-buddha.vercel.app";
+    return "ask-buddha-wine.vercel.app";
   }
 }
 

@@ -37,7 +37,7 @@ Without that key, the page still loads. Asking a question returns a clear messag
 | `UNLIMITED_DAILY_CAP` | No | Fair-use cap for a verified day pass or monthly subscription, per UTC day. Defaults to `300`. The same quota cookie counts these messages. Crisis replies do not count. |
 | `MAX_OUTPUT_TOKENS` | No | Hard cap on tokens generated for one reply. Defaults to `420`. Values outside 64–2000 are ignored. |
 | `NEXT_PUBLIC_SUPPORT_URL` | No | Destination for the “Support this teaching” link on the website. Leave it unset and the link explains that a giving page can be connected. The iOS and Android apps do not open this link. The website has no checkout and does not use Stripe. |
-| `NEXT_PUBLIC_SITE_URL` | No | Absolute site URL for link previews. On Vercel, `VERCEL_PROJECT_PRODUCTION_URL` is used when this is unset. Otherwise the URL is `https://ask-buddha.vercel.app`. |
+| `NEXT_PUBLIC_SITE_URL` | No | Absolute site URL for link previews. On Vercel, `VERCEL_PROJECT_PRODUCTION_URL` is used when this is unset. Otherwise the URL is `https://ask-buddha-wine.vercel.app`. |
 | `APPLE_IAP_KEY_ID` | No | Optional App Store Server API key ID. StoreKit receipts are verified locally without it. |
 | `APPLE_IAP_ISSUER_ID` | No | Issuer ID for that optional key. |
 | `APPLE_IAP_PRIVATE_KEY` | No | The `.p8` contents for that optional key. Newlines may be written as `\n`. |

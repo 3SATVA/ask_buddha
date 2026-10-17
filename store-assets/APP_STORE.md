@@ -1,6 +1,6 @@
 # Ask AI Buddha — App Store
 
-The iOS app is a Capacitor shell. It loads the live site (by default `https://ask-buddha.vercel.app`, or `CAPACITOR_SERVER_URL` / `NEXT_PUBLIC_SITE_URL` when set) and sells messages only through Apple In-App Purchase. The website keeps the free daily limit and the optional `NEXT_PUBLIC_SUPPORT_URL` link. That link is not shown in the iOS app. The website has no checkout and does not use Stripe. Android uses the same prices with shorter product IDs, listed in `store-assets/PLAY_STORE.md`.
+The iOS app is a Capacitor shell. It loads the live site (by default `https://ask-buddha-wine.vercel.app`, or `CAPACITOR_SERVER_URL` / `NEXT_PUBLIC_SITE_URL` when set) and sells messages only through Apple In-App Purchase. The website keeps the free daily limit and the optional `NEXT_PUBLIC_SUPPORT_URL` link. That link is not shown in the iOS app. The website has no checkout and does not use Stripe. Android uses the same prices with shorter product IDs, listed in `store-assets/PLAY_STORE.md`.
 
 The App Store Connect app does not exist yet. Do not run `.github/workflows/ios-testflight.yml` until the record, the products, and the signing secrets exist. The workflow is manual only (`workflow_dispatch`).
 
@@ -17,15 +17,15 @@ The App Store Connect app does not exist yet. Do not run `.github/workflows/ios-
 | SKU | `ask-buddha-ai` |
 | Primary category | Lifestyle |
 | Secondary category | Reference (not Books; this is a conversation, not a book) |
-| Privacy policy URL | `https://ask-buddha.vercel.app/privacy` |
-| Terms URL | `https://ask-buddha.vercel.app/terms` |
-| Support URL | `https://ask-buddha.vercel.app/about` |
-| Marketing URL | `https://ask-buddha.vercel.app` |
+| Privacy policy URL | `https://ask-buddha-wine.vercel.app/privacy` |
+| Terms URL | `https://ask-buddha-wine.vercel.app/terms` |
+| Support URL | `https://ask-buddha-wine.vercel.app/about` |
+| Marketing URL | `https://ask-buddha-wine.vercel.app` |
 | Copyright | 2026, using the legal name on the Apple Developer account |
 | Price | Free, with in-app purchases |
 | Age rating | Answer the questionnaire below. Expected result is 4+, not the Kids category. |
 
-Replace `https://ask-buddha.vercel.app` with the real production URL if Vercel assigns a different host. Set `NEXT_PUBLIC_SITE_URL` to that host.
+Production is `https://ask-buddha-wine.vercel.app`. Set `NEXT_PUBLIC_SITE_URL` if a custom domain replaces that host.
 
 ### Description
 
@@ -35,8 +35,8 @@ Ten messages a day are free. On this iOS app, Unlimited today opens the rest of 
 
 This is not the Buddha, and it is not scripture. It is not a teacher in your community, a doctor, or a counselor. If you may be in danger, the app points you to real help, including 988 in the United States.
 
-Privacy policy: https://ask-buddha.vercel.app/privacy
-Terms of use: https://ask-buddha.vercel.app/terms
+Privacy policy: https://ask-buddha-wine.vercel.app/privacy
+Terms of use: https://ask-buddha-wine.vercel.app/terms
 
 ### Keywords
 
@@ -59,8 +59,8 @@ Ask AI Buddha is an AI. It is not a person, not the Buddha, and not scripture. N
 
 Ten messages each UTC day are free. In the iOS app, tap Support, or send 10 messages, to open the paywall. Unlimited today is a $0.99 consumable for the rest of that UTC day. Monthly is a $6.99 auto-renewable subscription, one month, renewing until canceled in Settings. Each includes a fair-use cap of 300 messages per UTC day. Payment stays inside Apple.
 
-Privacy: https://ask-buddha.vercel.app/privacy
-Terms: https://ask-buddha.vercel.app/terms
+Privacy: https://ask-buddha-wine.vercel.app/privacy
+Terms: https://ask-buddha-wine.vercel.app/terms
 
 Sandbox: sign in with the Sandbox Apple ID attached to this review. Buy either product from the paywall. A day pass changes the footer to UNLIMITED MESSAGES ACTIVATED. A subscription changes it to MONTHLY UNLIMITED ACTIVATED. Restore Purchases puts an active subscription back on the device.
 
@@ -141,7 +141,7 @@ The workflow `.github/workflows/ios-testflight.yml` is manual (`workflow_dispatc
 | `ASC_ISSUER_ID` | Yes | Issuer ID shown above the keys list. |
 | `ASC_PRIVATE_KEY` | Yes | The full `.p8` file for that key, or the same file encoded as base64. |
 | `APPLE_TEAM_ID` | Yes | Team ID `9W7P7999LL`. Automatic signing cannot create a profile without it. |
-| `CAPACITOR_SERVER_URL` | No | Site the shell should load. When empty, the app loads `https://ask-buddha.vercel.app`. |
+| `CAPACITOR_SERVER_URL` | No | Site the shell should load. When empty, the app loads `https://ask-buddha-wine.vercel.app`. |
 
 `ASC_PRIVATE_KEY` is for building and uploading. `APPLE_IAP_PRIVATE_KEY` is optional and only used when the server should also call the App Store Server API. Receipt checks do not need it.
 
