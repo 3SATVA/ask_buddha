@@ -1,16 +1,9 @@
 # Manual TestFlight upload for Ask AI Buddha.
-# The App Store Connect app does not exist yet, so this workflow is manual only.
-# Review steps are in store-assets/APP_STORE.md.
+# Dispatch this from the Actions tab. Review steps are in store-assets/APP_STORE.md.
 name: iOS TestFlight
 
 on:
   workflow_dispatch:
-  # One-shot: a push that touches the sentinel starts this manual workflow
-  # when the caller cannot send workflow_dispatch. Remove it after the run starts.
-  push:
-    branches: [main]
-    paths:
-      - .github/workflows/ios-testflight.trigger
 
 concurrency:
   group: ios-testflight
