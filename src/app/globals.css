@@ -157,7 +157,7 @@ html.app-scroll-lock body {
   --head-top: 0.155;
   /* Just under the chin. The title's top edge sits on this line. */
   --chin-at: 0.43;
-  --title-size: clamp(1.15rem, 12.2vw, 3.45rem);
+  --title-size: clamp(1.15rem, 9.4vw, 3.45rem);
   /* Visible glow between the viewport top and the head. */
   --glow-band: calc(var(--layout-height) * 0.045);
   /* Larger than the screen on a phone, so the screen edge cuts about

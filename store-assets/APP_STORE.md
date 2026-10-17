@@ -40,9 +40,9 @@ Terms of use: https://ask-buddha-wine.vercel.app/terms
 
 ### Keywords
 
-`buddhism,dharma,meditation,mindfulness,sutta,dhamma,peace,compassion,theravada,pali`
+`buddhism,dharma,meditation,mindfulness,sutta,peace,compassion,theravada,pali`
 
-83 characters. No spaces. The words in the name (Ask, AI, Buddha) and the subtitle (quiet, talk, Dhamma) are left out, because App Store Connect already indexes those.
+76 characters. No spaces. The words in the name (Ask, AI, Buddha) and the subtitle (quiet, talk, Dhamma) are left out, because App Store Connect already indexes those.
 
 ### Promotional text
 
@@ -104,10 +104,10 @@ Subscription group reference name: `Ask AI Buddha Unlimited`
 | `com.starseedsquad.askbuddha.unlimited.monthly` | Auto-renewable subscription, 1 month | $6.99 | Messages until the period ends, up to 300 each UTC day | Monthly |
 
 Display name for the consumable: `Unlimited today`
-Consumable description: `Messages until midnight UTC on the day you buy it, up to 300 that day.`
+Consumable description: `Unlimited messages until midnight UTC today.`
 
 Subscription display name: `Monthly`
-Subscription description: `Messages with Ask AI Buddha until you cancel, up to 300 each day.`
+Subscription description: `Unlimited messages, renewing every month.`
 
 Family Sharing should be off.
 

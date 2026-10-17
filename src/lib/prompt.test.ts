@@ -107,10 +107,13 @@ describe("BUDDHA_PROMPT.md", () => {
     assert.match(prompt, /Do not quote in every reply/);
     assert.match(prompt, /must be from the Pali Canon/);
     assert.match(prompt, /> Exact words you are sure of\. \(Dhammapada 1:5\)/);
+    assert.match(prompt, /copied exactly/);
+    assert.match(prompt, /use no quote rather than an uncertain one/);
     assert.match(
       prompt,
-      /> Hatred is never appeased by hatred in this world\. By non-hatred alone is hatred appeased\. This is a law eternal\. \(Dhammapada 1:5\)/,
+      /> For hatred does not cease by hatred at any time: hatred ceases by love, this is an old rule\. \(Dhammapada 1:5\)/,
     );
+    assert.match(prompt, /Do not guess a verse number/);
   });
 
   it("still points a person in danger to real help", () => {
