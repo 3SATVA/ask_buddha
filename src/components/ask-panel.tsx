@@ -133,6 +133,8 @@ export function AskPanel({
 
   useEffect(() => {
     const stored = loadMessages();
+    // The saved conversation is only in the browser, so it is applied after hydration.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setMessages(stored.length > 0 ? stored : [openingMessage()]);
     setHydrated(true);
   }, []);
@@ -220,6 +222,8 @@ export function AskPanel({
 
   useEffect(() => {
     if (nativeApp && freeLimitReached && !streaming) {
+      // The free quota arrives after the first paint, which is when the paywall opens.
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setPaywallReason("limit");
       setPaywallOpen(true);
     }

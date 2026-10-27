@@ -29,8 +29,11 @@ export const MONTHLY_PRODUCT = {
 export const SUBSCRIPTION_GROUP = "Ask AI Buddha Unlimited";
 
 /**
- * Google Play product IDs must be 1–40 characters. The Apple IDs are longer,
- * so Play uses these shorter IDs for the same two products.
+ * Google Play product IDs are lowercase and 1–40 characters.
+ * com.starseedsquad.askbuddha.unlimited.today is 43 characters, and
+ * com.starseedsquad.askbuddha.unlimited.monthly is 45, so Play Console
+ * rejects those Apple IDs. These shorter IDs are the same two products:
+ * a consumable day pass and an auto-renewing monthly subscription.
  */
 export const GOOGLE_DAY_PASS = {
   id: "unlimited.today",

@@ -112,11 +112,17 @@ export async function loadStorePrices(store: StoreName = "apple") {
 
 async function settle(store: StoreName, productId: string, token: string) {
   const { NativePurchases } = await nativePurchases();
-  if (store === "google" && isDayPass(productId)) {
-    await NativePurchases.consumePurchase({ purchaseToken: token });
-    return;
+  try {
+    if (store === "google" && isDayPass(productId)) {
+      await NativePurchases.consumePurchase({ purchaseToken: token });
+      return;
+    }
+    await NativePurchases.acknowledgePurchase({ purchaseToken: token });
+  } catch (error) {
+    // iOS still has to finish the transaction. On Android the server has
+    // already consumed or acknowledged the token, so a second call can fail.
+    if (store !== "google") throw error;
   }
-  await NativePurchases.acknowledgePurchase({ purchaseToken: token });
 }
 
 export async function purchaseProduct(productId: string) {

@@ -38,6 +38,7 @@ yarn-error.log*
 *.p8
 *.jks
 *.keystore
+*.p12
 private_keys/
 
 # iOS build output. The Xcode project itself is committed.
