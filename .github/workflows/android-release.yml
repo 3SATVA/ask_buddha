@@ -5,12 +5,18 @@ name: Android release
 
 on:
   workflow_dispatch:
+  # Temporary: this token cannot call workflow_dispatch. A main push whose
+  # message contains [android-release] starts one signed build. Remove after.
+  push:
+    branches:
+      - main
 
 permissions:
   contents: read
 
 jobs:
   release:
+    if: github.event_name == 'workflow_dispatch' || contains(github.event.head_commit.message, '[android-release]')
     runs-on: ubuntu-latest
     timeout-minutes: 45
     env:
