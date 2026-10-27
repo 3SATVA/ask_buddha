@@ -153,7 +153,7 @@ describe("confirmGooglePurchases", () => {
     privateKey: ACCOUNT.private_key,
   };
 
-  it("asks Google about a known token and ignores unknown products", async () => {
+  it("asks Google about a known token, consumes it, and ignores unknown products", async () => {
     const calls: string[] = [];
     const result = await confirmGooglePurchases(
       [
@@ -164,11 +164,14 @@ describe("confirmGooglePurchases", () => {
       NOW,
       {
         accessToken: async () => "test-token",
-        fetch: async (input) => {
-          calls.push(String(input));
+        fetch: async (input, init) => {
+          const method = (init?.method ?? "GET").toUpperCase();
+          calls.push(`${method} ${String(input)}`);
+          if (method === "POST") return new Response(null, { status: 204 });
           return new Response(
             JSON.stringify({
               purchaseState: 0,
+              consumptionState: 0,
               purchaseTimeMillis: String(Date.parse("2026-10-16T01:00:00.000Z")),
               orderId: "GPA.1234",
             }),
@@ -179,9 +182,126 @@ describe("confirmGooglePurchases", () => {
     );
     assert.equal(result.ok, true);
     if (result.ok) assert.equal(result.entitlement.productId, GOOGLE_DAY_PASS.id);
-    assert.equal(calls.length, 1);
+    assert.equal(calls.length, 2);
+    assert.match(calls[0], /^GET /);
     assert.match(calls[0], /purchases\/products\/unlimited\.today\/tokens\/day-token$/);
     assert.match(calls[0], /com\.starseedsquad\.askbuddha/);
+    assert.match(calls[1], /^POST /);
+    assert.match(calls[1], /:consume$/);
+  });
+
+  it("does not unlock a day pass Google will not consume", async () => {
+    const result = await confirmGooglePurchases(
+      [{ productId: GOOGLE_DAY_PASS.id, purchaseToken: "day-token" }],
+      config,
+      NOW,
+      {
+        accessToken: async () => "test-token",
+        fetch: async (_input, init) => {
+          if ((init?.method ?? "GET").toUpperCase() === "POST") {
+            return new Response("no", { status: 500 });
+          }
+          return new Response(
+            JSON.stringify({
+              purchaseState: 0,
+              consumptionState: 0,
+              purchaseTimeMillis: String(Date.parse("2026-10-16T01:00:00.000Z")),
+              orderId: "GPA.1234",
+            }),
+            { status: 200 },
+          );
+        },
+      },
+    );
+    assert.deepEqual(result, { ok: false });
+  });
+
+  it("unlocks a day pass that was already consumed", async () => {
+    const calls: string[] = [];
+    const result = await confirmGooglePurchases(
+      [{ productId: GOOGLE_DAY_PASS.id, purchaseToken: "day-token" }],
+      config,
+      NOW,
+      {
+        accessToken: async () => "test-token",
+        fetch: async (input, init) => {
+          calls.push(`${(init?.method ?? "GET").toUpperCase()} ${String(input)}`);
+          return new Response(
+            JSON.stringify({
+              purchaseState: 0,
+              consumptionState: 1,
+              purchaseTimeMillis: String(Date.parse("2026-10-16T01:00:00.000Z")),
+              orderId: "GPA.1234",
+            }),
+            { status: 200 },
+          );
+        },
+      },
+    );
+    assert.equal(result.ok, true);
+    assert.equal(calls.length, 1);
+  });
+
+  it("acknowledges an active subscription before unlocking it", async () => {
+    const calls: string[] = [];
+    const result = await confirmGooglePurchases(
+      [{ productId: GOOGLE_MONTHLY_PRODUCT.id, purchaseToken: "sub-token" }],
+      config,
+      NOW,
+      {
+        accessToken: async () => "test-token",
+        fetch: async (input, init) => {
+          const method = (init?.method ?? "GET").toUpperCase();
+          calls.push(`${method} ${String(input)}`);
+          if (method === "POST") return new Response(null, { status: 204 });
+          return new Response(
+            JSON.stringify({
+              subscriptionState: "SUBSCRIPTION_STATE_ACTIVE",
+              acknowledgementState: "ACKNOWLEDGEMENT_STATE_PENDING",
+              latestOrderId: "GPA.sub",
+              lineItems: [
+                {
+                  productId: GOOGLE_MONTHLY_PRODUCT.id,
+                  expiryTime: "2026-11-16T18:00:00.000Z",
+                },
+              ],
+            }),
+            { status: 200 },
+          );
+        },
+      },
+    );
+    assert.equal(result.ok, true);
+    if (result.ok) assert.equal(result.entitlement.kind, "subscription");
+    assert.match(calls[1] ?? "", /purchases\/subscriptions\/unlimited\.monthly\/tokens\/sub-token:acknowledge$/);
+  });
+
+  it("consumes an expired day pass without unlocking it", async () => {
+    const calls: string[] = [];
+    const result = await confirmGooglePurchases(
+      [{ productId: GOOGLE_DAY_PASS.id, purchaseToken: "old-token" }],
+      config,
+      NOW,
+      {
+        accessToken: async () => "test-token",
+        fetch: async (input, init) => {
+          const method = (init?.method ?? "GET").toUpperCase();
+          calls.push(`${method} ${String(input)}`);
+          if (method === "POST") return new Response(null, { status: 204 });
+          return new Response(
+            JSON.stringify({
+              purchaseState: 0,
+              consumptionState: 0,
+              purchaseTimeMillis: String(Date.parse("2026-10-15T12:00:00.000Z")),
+              orderId: "GPA.old",
+            }),
+            { status: 200 },
+          );
+        },
+      },
+    );
+    assert.deepEqual(result, { ok: false });
+    assert.match(calls[1] ?? "", /:consume$/);
   });
 
   it("does not grant when Google rejects the token", async () => {

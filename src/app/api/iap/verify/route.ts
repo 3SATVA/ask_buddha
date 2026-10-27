@@ -151,7 +151,12 @@ export async function POST(request: NextRequest) {
 
   if (googlePurchases.length > 0) {
     const config = readGooglePlayConfig();
-    if (!config) return notReady();
+    if (!config) {
+      console.warn(
+        "ASK BUDDHA purchase: GOOGLE_PLAY_SERVICE_ACCOUNT_JSON is unset or invalid. The purchase was not unlocked.",
+      );
+      return notReady();
+    }
     const result = await confirmGooglePurchases(googlePurchases, config, now);
     if (!result.ok) return notConfirmed(request, secret, replace, now);
     return grantResponse(grantToSeal(request, secret, result.entitlement, replace, now), secret, now);

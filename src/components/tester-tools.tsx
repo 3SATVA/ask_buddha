@@ -31,6 +31,8 @@ export function TesterTools({
 
   useEffect(() => {
     if (!open) return;
+    // The saved tester code is read when the sheet opens.
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setSaved(Boolean(readTesterCode()));
     setNote("");
     setCode("");

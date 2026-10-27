@@ -2,7 +2,7 @@
 
 The Android app is a Capacitor shell with the package name `com.starseedsquad.askbuddha`, the same id as the iOS bundle. It loads the live site (by default `https://ask-buddha-wine.vercel.app`, or `CAPACITOR_SERVER_URL` / `NEXT_PUBLIC_SITE_URL` when set) and sells messages only through Google Play Billing. The website keeps the free daily limit. It has no checkout and does not use Stripe. The optional `NEXT_PUBLIC_SUPPORT_URL` link is shown on the website only, never inside the app.
 
-The Play Console app does not exist yet. The workflow `.github/workflows/android-internal.yml` is manual only (`workflow_dispatch`). Do not run it until the steps at the bottom are done.
+The Play Console app does not exist yet. The workflow `.github/workflows/android-release.yml` is manual only (`workflow_dispatch`). It can build a signed bundle before the Play app exists. The upload to internal testing waits until the service account secret exists.
 
 ## Listing
 
@@ -39,7 +39,7 @@ Terms of use: https://ask-buddha-wine.vercel.app/terms
 
 ## Products
 
-Create these in Play Console → Monetize → Products. Product IDs cannot be changed later, and Play allows at most 40 characters. The Apple IDs are longer, so Android uses these.
+Create these in Play Console → Monetize → Products. Product IDs cannot be changed later. Play allows 1–40 lowercase characters. The Apple IDs are `com.starseedsquad.askbuddha.unlimited.today` (43 characters) and `com.starseedsquad.askbuddha.unlimited.monthly` (45 characters), so Play Console will reject them. Android uses these shorter IDs for the same two products.
 
 | Product ID | Type | Price | Base plan | What it unlocks |
 | --- | --- | --- | --- | --- |
@@ -56,7 +56,7 @@ Billing period: 1 month
 Renewal: auto-renewing
 Grace period: 7 days, if the console offers it
 
-The app consumes `unlimited.today` after the server confirms it, so it can be bought again on another day. The subscription is acknowledged after the server confirms it. Family sharing stays off.
+The server consumes `unlimited.today` after Google confirms it, so it can be bought again on another day. The server acknowledges the subscription after Google confirms it. The app finishes the same purchase on the device. Family sharing stays off.
 
 A day is the same UTC day the free limit uses. Unlimited today bought at 11pm UTC lasts until midnight UTC.
 
@@ -83,29 +83,29 @@ Set these on the host that serves the website (Vercel), not in the Android binar
 | `UNLIMITED_DAILY_CAP` | Optional. Fair-use cap for a day pass or subscription, per UTC day. Defaults to `300`. |
 | `MAX_OUTPUT_TOKENS` | Optional. Maximum tokens generated for one reply. Defaults to `420`. |
 
-The server calls `purchases.products.get` for Unlimited today and `purchases.subscriptionsv2.get` for the monthly plan. A consumable grants access until the end of its purchase day. A subscription grants access while Google reports it active, canceled but not yet expired, or in a grace period. On hold, paused, pending, and expired grant nothing.
+The server calls `purchases.products.get` for Unlimited today and `purchases.subscriptionsv2.get` for the monthly plan. It then calls `purchases.products.consume` or `purchases.subscriptions.acknowledge`. A consumable grants access until the end of its purchase day. A subscription grants access while Google reports it active, canceled but not yet expired, or in a grace period. On hold, paused, pending, and expired grant nothing. If `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` is missing or invalid, the purchase is refused and no unlock is stored.
 
 ## GitHub secrets
 
-The workflow `.github/workflows/android-internal.yml` is manual (`workflow_dispatch` only). It does not run on push. It builds a signed `.aab`, saves that file as an artifact, and uploads it to the Play internal testing track. Add these repository secrets, then run it by hand after the Play app exists.
+The workflow `.github/workflows/android-release.yml` is manual (`workflow_dispatch` only). It does not run on push. It builds a signed `.aab` with versionCode 1 and versionName 1.0, checks the signature, and saves that file as the artifact `ask-buddha-release-aab`. The upload to the Play internal testing track runs only when `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` is set. An empty secret skips that step and the bundle is still saved. The next Play upload needs a higher versionCode, because Play rejects a repeated one.
 
 | Secret | Required | What to paste |
 | --- | --- | --- |
-| `ANDROID_KEYSTORE_BASE64` | Yes | The upload keystore (`.jks`), encoded as base64. One line, no spaces. |
+| `ANDROID_KEYSTORE_BASE64` | Yes | The upload keystore (PKCS12), encoded as base64. One line, no spaces. |
 | `ANDROID_KEYSTORE_PASSWORD` | Yes | The keystore password. |
-| `ANDROID_KEY_ALIAS` | Yes | The key alias inside that keystore. |
+| `ANDROID_KEY_ALIAS` | Yes | The key alias inside that keystore. This repo's upload key uses `upload`. |
 | `ANDROID_KEY_PASSWORD` | Yes | The key password. It is often the same as the keystore password. |
-| `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | Yes | The service account JSON used to upload the bundle. Raw JSON, or the same JSON encoded as base64. This can be the same account the server uses to verify purchases, if that account also has permission to release to testing tracks. |
+| `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` | No | The service account JSON used to upload the bundle. Raw JSON, or the same JSON encoded as base64. Leave it empty until the Play app exists. The signed bundle is still built. This can be the same account the server uses to verify purchases, if that account also has permission to release to testing tracks. |
 | `CAPACITOR_SERVER_URL` | No | Site the shell should load. When empty, the app loads `https://ask-buddha-wine.vercel.app`. |
 
 Create the keystore once and keep the file. Losing it means you cannot ship updates with the same upload key.
 
 ```bash
-keytool -genkeypair -v -keystore ask-buddha-upload.jks -alias askbuddha -keyalg RSA -keysize 2048 -validity 10000
-base64 -w 0 ask-buddha-upload.jks
+keytool -genkeypair -v -storetype PKCS12 -keystore ask-buddha-upload.p12 -alias upload -keyalg RSA -keysize 2048 -validity 10000
+base64 -w 0 ask-buddha-upload.p12
 ```
 
-On macOS, `base64` has no `-w`. Use `base64 -i ask-buddha-upload.jks | tr -d '\n'`.
+On macOS, `base64` has no `-w`. Use `base64 -i ask-buddha-upload.p12 | tr -d '\n'`. The alias in the existing upload key is `upload`.
 
 ## What you still do in Play Console
 
@@ -118,8 +118,8 @@ On macOS, `base64` has no `-w`. Use `base64 -i ask-buddha-upload.jks | tr -d '\n
 7. Put the JSON in the server variable `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` and in the GitHub secret of the same name. Also set `UNLOCK_COOKIE_SECRET` on the server.
 8. Monetize → Products: create `unlimited.today` at $0.99 and the subscription `unlimited.monthly` with base plan `monthly` at $6.99. Activate both.
 9. Deploy this website first, so the shell loads the paywall and the privacy and terms pages.
-10. The first Android App Bundle often has to be uploaded by a person in Play Console → Internal testing, because the Play API rejects the first upload. Download the bundle from the workflow artifact, or build it after the keystore exists, and upload that first bundle by hand. After Play accepts it, later runs of the workflow can upload to internal testing.
-11. On GitHub, open Actions → Android internal testing → Run workflow. Do this only after the keystore secrets exist and the app record exists.
+10. The first Android App Bundle often has to be uploaded by a person in Play Console → Internal testing, because the Play API rejects the first upload. Download `ask-buddha-release-aab` from the workflow artifact and upload that first bundle by hand. After Play accepts it, later runs can upload to internal testing once `GOOGLE_PLAY_SERVICE_ACCOUNT_JSON` is set. Raise versionCode above 1 before that second upload.
+11. On GitHub, open Actions → Android release → Run workflow. The keystore secrets are required. The Play service account is not.
 12. Internal testing → testers. Add the Gmail accounts. License testing (Setup → License testing) makes those purchases free.
 13. Install from the internal testing opt-in link. Tap Support, or send 10 messages, to open the paywall. Buy Unlimited today and the monthly plan with a license tester. Restore purchases should put the subscription back.
 

@@ -71,6 +71,7 @@ export function readGooglePlayConfig(
 
 type ProductPurchase = {
   purchaseState?: number;
+  consumptionState?: number;
   purchaseTimeMillis?: string;
   orderId?: string;
 };
@@ -82,6 +83,7 @@ type SubscriptionLine = {
 
 type SubscriptionPurchase = {
   subscriptionState?: string;
+  acknowledgementState?: string;
   latestOrderId?: string;
   lineItems?: SubscriptionLine[];
 };
@@ -157,8 +159,65 @@ function playUrl(config: GooglePlayConfig, purchase: GooglePurchaseRequest) {
   return `${PLAY_API}/${packageName}/purchases/subscriptionsv2/tokens/${token}`;
 }
 
+function settleUrl(config: GooglePlayConfig, purchase: GooglePurchaseRequest) {
+  const packageName = encodeURIComponent(config.packageName);
+  const productId = encodeURIComponent(purchase.productId);
+  const token = encodeURIComponent(purchase.purchaseToken);
+  if (isDayPass(purchase.productId)) {
+    return `${PLAY_API}/${packageName}/purchases/products/${productId}/tokens/${token}:consume`;
+  }
+  return `${PLAY_API}/${packageName}/purchases/subscriptions/${productId}/tokens/${token}:acknowledge`;
+}
+
+type SettleResult = "settled" | "skipped" | "failed";
+
+function playAlreadySettled(text: string) {
+  return /alreadyAcknowledged|alreadyConsumed|concurrentUpdate|already been consumed|already been acknowledged/i.test(
+    text,
+  );
+}
+
+/**
+ * A day pass is consumed. A subscription is acknowledged. Either call is
+ * what stops Google from refunding an unfinished purchase. Already settled
+ * purchases count as success so restore can run again.
+ */
+async function settleGooglePurchase(
+  config: GooglePlayConfig,
+  purchase: GooglePurchaseRequest,
+  body: ProductPurchase & SubscriptionPurchase,
+  accessToken: string,
+  fetchImpl: typeof fetch,
+): Promise<SettleResult> {
+  if (isDayPass(purchase.productId)) {
+    if (body.purchaseState !== 0) return "skipped";
+    if (body.consumptionState === 1) return "settled";
+  } else {
+    if (!body.subscriptionState || body.subscriptionState === "SUBSCRIPTION_STATE_PENDING") {
+      return "skipped";
+    }
+    if (body.acknowledgementState === "ACKNOWLEDGEMENT_STATE_ACKNOWLEDGED") return "settled";
+  }
+
+  const response = await fetchImpl(settleUrl(config, purchase), {
+    method: "POST",
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+      Accept: "application/json",
+      "Content-Type": "application/json",
+    },
+    body: "{}",
+  });
+  if (response.ok) return "settled";
+  const text = await response.text().catch(() => "");
+  if (playAlreadySettled(text)) return "settled";
+  console.error("ASK BUDDHA Play acknowledge failed:", response.status);
+  return "failed";
+}
+
 /**
  * Confirm each purchase token with the Google Play Developer API.
+ * A valid purchase is consumed or acknowledged before it can unlock the app.
  * The API response is what grants access.
  */
 export async function confirmGooglePurchases(
@@ -202,7 +261,9 @@ export async function confirmGooglePurchases(
       const grant = isDayPass(purchase.productId)
         ? entitlementForGoogleProduct(purchase.productId, body, now)
         : entitlementForGoogleSubscription(purchase.productId, body, now);
-      if (grant) grants.push(grant);
+      const settled = await settleGooglePurchase(config, purchase, body, token, fetchImpl);
+      if (settled === "failed") continue;
+      if (grant && settled === "settled") grants.push(grant);
     } catch (error) {
       const message = error instanceof Error ? error.message : "unknown error";
       console.error("ASK BUDDHA Play verification failed:", message);
